@@ -1,13 +1,28 @@
+package main;
+
 import myrendezvous.Rendezvous;
 
 import java.util.Calendar;
 
-public class RendezvousImpl implements Rendezvous {
+public class RendezvousImpl implements Rendezvous, Cloneable {
 
     Calendar time;
     int duration;
     String title;
     String description;
+    Calendar tag;
+
+    public RendezvousImpl(Calendar time, int duration, String title, String description) {
+        this(time, duration, title);
+        this.description = description;
+    }
+
+    public RendezvousImpl(Calendar time, int duration, String title) {
+        this.tag = (Calendar) time.clone();
+        this.time = time;
+        this.duration = duration;
+        this.title = title;
+    }
 
     @Override
     protected RendezvousImpl clone() {
@@ -58,5 +73,9 @@ public class RendezvousImpl implements Rendezvous {
     @Override
     public void setDescription(String s) {
         this.description = s;
+    }
+
+    public Calendar getTag() {
+        return tag;
     }
 }
