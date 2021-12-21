@@ -15,7 +15,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
     }
 
     @Override
-    public Rendezvous addRendezvous(Rendezvous rdv) {
+    public Rendezvous addRendezvous(Rendezvous rdv) throws IllegalArgumentException {
             // Copie le rendez-vous passé en paramètre
             RendezvousImpl rdvToAdd = new RendezvousImpl(rdv.getTime(), rdv.getDuration(), rdv.getTitle(), rdv.getDescription());
             RendezvousImpl rdvToClone = rdvToAdd.clone();
@@ -48,12 +48,11 @@ public class RendezvousManagerImpl implements RendezvousManager {
 
     @Override
     public void removeAllRendezvousBefore(Calendar calendar) throws IllegalArgumentException {
-        for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
-            // Si la valeur de l'instant de départ de l'argument se situe avant
-            // la valeur de l'instant de départ de l'entrée
-            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) >= 0){
-                treeMap.remove(entry.getKey());
-            }
+        // Création d'une headMap qui correspond à une vue d'une portion de la treeMap
+        // dont les valeurs de clés sont inférieures ou égales au paramètre calendar
+        SortedMap<Calendar, RendezvousImpl> headMap = ((TreeMap)treeMap.clone()).headMap(calendar,true);
+        for(Calendar entry : headMap.keySet()) {
+            treeMap.remove(entry);
         }
     }
 
@@ -77,9 +76,9 @@ public class RendezvousManagerImpl implements RendezvousManager {
         List<Rendezvous> rendezvousList = new ArrayList<>();
         for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
             // Si la valeur de l'instant de départ de l'entrée se situe entre
-            // la valeur de l'instant de départ des deux paramètres
-            if ((entry.getValue().getTime().getTime().compareTo(startTime.getTime())) <= 0
-                && (entry.getValue().getTime().getTime().compareTo(endTime.getTime())) >= 0){
+            // la valeur de l'instant de départ de chacun des deux paramètres
+            if ((entry.getValue().getTime().getTime().compareTo(startTime.getTime())) >= 0
+                    && (entry.getValue().getTime().getTime().compareTo(endTime.getTime())) <= 0){
                 // On ajoute une copie de l'entrée à la liste
                 rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
             }
@@ -93,7 +92,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
         for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
             // Si la valeur de l'instant de départ de l'argument se situe avant
             // la valeur de l'instant de départ de l'entrée
-            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) >= 0){
+            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) <= 0){
                 // On ajoute une copie de l'entrée à la liste
                 rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
             }
@@ -107,7 +106,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
         for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
             // Si la valeur de l'instant de départ de l'argument se situe après
             // la valeur de l'instant de départ de l'entrée
-            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) <= 0){
+            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) >= 0){
                 // On ajoute une copie de l'entrée à la liste
                 rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
             }
@@ -118,12 +117,20 @@ public class RendezvousManagerImpl implements RendezvousManager {
     @Override
     public List<Rendezvous> getRendezvousToday() {
 
-        Calendar today = Calendar.getInstance();
+        Calendar today = new GregorianCalendar();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        Calendar tomorrow = today;
+        tomorrow.add(Calendar.DAY_OF_MONTH, 1);
+
+        SortedMap<Calendar, RendezvousImpl> subMap =
+                ((TreeMap)treeMap.clone()).subMap(today, true, tomorrow, false);
         List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
-            if (entry.getValue().getTime().equals(today)){
-                rendezvousList.add(treeMap.get(entry));
-            }
+        for(Calendar entry : subMap.keySet()) {
+            rendezvousList.add(subMap.get(entry));
         }
         return rendezvousList;
     }
