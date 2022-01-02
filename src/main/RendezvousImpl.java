@@ -3,6 +3,7 @@ package main;
 import myrendezvous.Rendezvous;
 
 import java.util.Calendar;
+import java.util.Objects;
 
 public class RendezvousImpl implements Rendezvous, Cloneable {
 
@@ -15,6 +16,11 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
     public RendezvousImpl(Calendar time, int duration, String title, String description) {
         this(time, duration, title);
         this.description = description;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(time, duration, title, description, tag);
     }
 
     public RendezvousImpl(Calendar time, int duration, String title) {
@@ -78,4 +84,13 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
     public Calendar getTag() {
         return tag;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RendezvousImpl that = (RendezvousImpl) o;
+        return duration == that.duration && time.equals(that.time) && title.equals(that.title) && Objects.equals(description, that.description) && tag.equals(that.tag);
+    }
+
 }

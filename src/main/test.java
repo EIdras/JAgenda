@@ -1,17 +1,21 @@
 package main;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.UUID;
 
 public class test {
-    public static void main(String[] args) {
-        /*
-        for (int i = 0; i < 10; i++) {
-            System.out.println(UUID.randomUUID());
-        }
-         */
+    static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        Calendar c = Calendar.getInstance();
-        System.out.println("The Current Date is:" + c);
+    public static void main(String[] args)
+    {
+        Calendar now = Calendar.getInstance();
+        now.set(Calendar.HOUR, 0);
+        now.set(Calendar.MINUTE, 0);
+        now.set(Calendar.SECOND, 0);
+        System.out.println(sdf.format(now.getTime()));
+        now.set(Calendar.HOUR_OF_DAY, 0);
+        System.out.println(sdf.format(now.getTime()));
     }
 }
