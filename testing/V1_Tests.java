@@ -285,6 +285,69 @@ public class V1_Tests {
     @Test
     public void findFreeTime(){
 
+        /*
+                                        [expectedShort]  [expectedLong]
+                                                 :         :
+                             startTime           :         :               endTime
+                                 |     rdv3      V         :                  |
+            rdv1   rdv2          |      |=======>     rdv4 V          rdv5    |
+        ]----|=>----|============|==========>---------|===>------------|======|==>--------------->
+                                    
+
+         */
+
+        Calendar calendar1 = Calendar.getInstance();
+        calendar1.set(2021, Calendar.DECEMBER, 5, 16, 0);
+        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 15, "Goûter");
+
+        Calendar calendar2 = Calendar.getInstance();
+        calendar2.set(2021, Calendar.DECEMBER, 7, 12, 30);
+        RendezvousImpl rdv2 = new RendezvousImpl(calendar2, 2880 /* dure 2 jours, finit le 9 a 12h30 */, "Week-end");
+
+        Calendar calendar3 = Calendar.getInstance();
+        calendar3.set(2021, Calendar.DECEMBER, 8, 19, 15);
+        RendezvousImpl rdv3 = new RendezvousImpl(calendar3, 1125 /* finit le 9 à 14h */, "Soirée");
+
+        /* Il y a 23h de temps libre entre rdv3 et rdv4 soit 1380 minutes */
+
+        Calendar calendar4 = Calendar.getInstance();
+        calendar4.set(2021, Calendar.DECEMBER, 10, 12, 0);
+        RendezvousImpl rdv4 = new RendezvousImpl(calendar4, 60 /* finit le 10 à 13h */, "Restaurant");
+
+        /* Il y a 40h de temps libre entre rdv4 et rdv5 soit 2400 minutes */
+
+        Calendar calendar5 = Calendar.getInstance();
+        calendar5.set(2021, Calendar.DECEMBER, 12, 9, 0);
+        RendezvousImpl rdv5 = new RendezvousImpl(calendar5, 240 /* finit le 12 à 13h */, "Réunion");
+
+        Calendar startTime = Calendar.getInstance();                                    // startTime
+        startTime.set(2021, Calendar.DECEMBER, 8, 12, 30);    // 8 décembre 12h30
+
+        Calendar endTime = Calendar.getInstance();                                      // endTime
+        endTime.set(2021, Calendar.DECEMBER, 12, 12, 0);      // 12 décembre 12h00
+
+
+        Calendar expectedLongDuration = Calendar.getInstance();                                      // expectedLongDuration
+        expectedLongDuration.set(2021, Calendar.DECEMBER, 10, 13, 0);      // fin de rdv4 soit le 10 décembre 13h00
+
+        Calendar expectedShortDuration = Calendar.getInstance();                                     // expectedShortDuration
+        expectedShortDuration.set(2021, Calendar.DECEMBER, 9, 14, 0);      // fin de rdv3 soit le 9 décembre 14h00
+
+        rdvManager.addRendezvous(rdv1);
+        rdvManager.addRendezvous(rdv2);
+        rdvManager.addRendezvous(rdv3);
+        rdvManager.addRendezvous(rdv4);
+        rdvManager.addRendezvous(rdv5);
+
+        long finRDV2 = (rdv2.getTime().getTimeInMillis() + rdv2.getDuration() * 60000);
+        long endTimeM = endTime.getTimeInMillis();
+        System.out.println("Fin RDV2    : " + finRDV2);
+        System.out.println("endTime     : " + endTimeM);
+        System.out.println("rdv2".concat(((finRDV2) < (endTimeM)) ? " < " : " > ") + "endTime");
+        System.out.println("------------------------------");
+
+        assertEquals(expectedLongDuration, rdvManager.findFreeTime(1440, startTime, endTime));
+        assertEquals(expectedShortDuration, rdvManager.findFreeTime(120, startTime, endTime));
     }
 
 }

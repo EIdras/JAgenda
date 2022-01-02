@@ -188,34 +188,83 @@ public class RendezvousManagerImpl implements RendezvousManager {
     @Override
     public Calendar findFreeTime(int duration, Calendar startTime, Calendar endTime) throws IllegalArgumentException {
         Map<Calendar, RendezvousImpl> headMap = createSubMap(null, startTime);
+        System.out.println("Nombre de RDV débutant avant startTime : "+headMap.size());
         long limiteBasse = startTime.getTimeInMillis();
+        long limiteHaute = endTime.getTimeInMillis();
+        Calendar freeTimeStart = null;
 
         Iterator<Calendar> headMapIt = headMap.keySet().iterator();
 
         while (limiteBasse < endTime.getTimeInMillis() && headMapIt.hasNext()){
             Calendar entry = headMapIt.next();
+            System.out.println("    - " + treeMap.get(entry).getTitle());
             long entryStart = headMap.get(entry).getTime().getTimeInMillis();
             long entryEnd = entryStart + headMap.get(entry).getDuration() * 60000;
             if (entryEnd > limiteBasse){
                 limiteBasse = entryEnd;
             }
         }
-        if (limiteBasse < endTime.getTimeInMillis()){
+        if (limiteBasse >= endTime.getTimeInMillis()){
             System.out.println("Un rendez-vous est prévu pendant toute la période donnée.");
         }
 
-        /*
-        Date date = new Date(limiteBasse); Calendar limiteBasseCalendar = Calendar.getInstance(); limiteBasseCalendar.setTimeInMillis(limiteBasse);
+        // Tant que entre startTime et limiteBasse il existe au moins un rendez-vous,
+        // on vérifie si ils finissent apres startTime et si c'est le cas on change sa valeur
+        Calendar limiteBasseCalendar = Calendar.getInstance();
+        Calendar oldLimiteBasseCalendar = Calendar.getInstance();
+        long oldLimiteBasse = 0;
+        limiteBasseCalendar.setTimeInMillis(limiteBasse);
 
-        Map<Calendar, RendezvousImpl> subMap = createSubMap(limiteBasseCalendar, endTime);
-        Iterator<Calendar> subMapIt = subMap.keySet().iterator();
-        while (subMapIt.hasNext()){
-            Calendar entry = subMapIt.next();
-            if (entry.getTime())
+        Map<Calendar, RendezvousImpl> betweenMap = createSubMap(startTime, limiteBasseCalendar);
+        while (!betweenMap.isEmpty()){
+            System.out.println("Rendez-vous trouvé entre startTime et limiteBasse ("+betweenMap.size()+")");
+            oldLimiteBasse = limiteBasse;
+            Iterator<Calendar> betweenMapIt = betweenMap.keySet().iterator();
+            while (betweenMapIt.hasNext()){
+                Calendar cal = betweenMapIt.next();
+                RendezvousImpl rdv = treeMap.get(cal);
+                long rdvEnd = (rdv.getTime().getTimeInMillis() + rdv.getDuration() * 60000);
+                if (rdvEnd > limiteBasse){
+                    System.out.println("    - Un rendez-vous se termine après limiteBasse, actualisation de la valeur");
+                    limiteBasse = rdvEnd;
+                }
+            }
+            oldLimiteBasseCalendar.setTimeInMillis(oldLimiteBasse);
+            limiteBasseCalendar.setTimeInMillis(limiteBasse);
+            betweenMap = createSubMap(oldLimiteBasseCalendar, limiteBasseCalendar);
         }
-        */
+        System.out.println("- - - - - - - - - - - - ");
 
-        return null;
+
+        // Tant qu'on a pas trouvé de temps libre et qu'on a toujours un créneau à vérifier
+        while (freeTimeStart == null && true /*TODO*/){
+            SortedMap<Calendar, RendezvousImpl> subMap = (SortedMap) createSubMap(limiteBasseCalendar, endTime);
+            RendezvousImpl rdvLimiteHaute = null;
+            if (!subMap.isEmpty()){
+                RendezvousImpl firstRDV = treeMap.get(subMap.firstKey());
+                rdvLimiteHaute = firstRDV;
+                limiteHaute = firstRDV.getTime().getTimeInMillis();
+            }
+
+            // Si la durée du premier créneau dispo. est supérieure ou égale à la durée recherchée,
+            // la valeur à retourner est la limite basse soit l'instant de départ de ce créneau
+            if ((limiteBasseCalendar.getTimeInMillis() + duration * 60000) <= limiteHaute){
+                System.out.println(" ~~~ FREE TIME FOUND ~~~ ");
+                freeTimeStart = limiteBasseCalendar;
+            }
+            // Si la durée libre n'est pas suffisante,
+            // on va aller chercher si il y a un autre créneau dispo après
+            else {
+                if (rdvLimiteHaute != null){
+                    limiteBasse = rdvLimiteHaute.getTime().getTimeInMillis() + rdvLimiteHaute.getDuration() * 60000;
+
+                }
+
+            }
+        }
+
+
+        return freeTimeStart;
     }
 
     @Override
