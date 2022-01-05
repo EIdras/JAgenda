@@ -1,5 +1,5 @@
-import main.RendezvousImpl;
-import main.RendezvousManagerImpl;
+import V1.RendezvousImpl;
+import V1.RendezvousManagerImpl;
 import myrendezvous.Rendezvous;
 import myrendezvous.exceptions.RendezvousNotFound;
 import org.junit.jupiter.api.*;
@@ -229,7 +229,7 @@ public class V1_Tests {
         RendezvousImpl rdvToUpdate = (RendezvousImpl) rdvManager.addRendezvous(rdv);
         rdvToUpdate.setDescription("Jean Louis et Michel");
         RendezvousImpl rdvUpdated = (RendezvousImpl) rdvManager.updateRendezvous(rdvToUpdate);
-        assertEquals(true, !rdvToUpdate.equals(rdvUpdated));
+        assertEquals(true, rdvToUpdate.equals(rdvUpdated));
     }
 
     @Test
@@ -292,8 +292,6 @@ public class V1_Tests {
                                  |     rdv3      V         :                  |
             rdv1   rdv2          |      |=======>     rdv4 V          rdv5    |
         ]----|=>----|============|==========>---------|===>------------|======|==>--------------->
-                                    
-
          */
 
         Calendar calendar1 = Calendar.getInstance();
@@ -346,8 +344,10 @@ public class V1_Tests {
         System.out.println("rdv2".concat(((finRDV2) < (endTimeM)) ? " < " : " > ") + "endTime");
         System.out.println("------------------------------");
 
-        assertEquals(expectedLongDuration, rdvManager.findFreeTime(1440, startTime, endTime));
+        assertEquals(expectedLongDuration,  rdvManager.findFreeTime(1440, startTime, endTime));
         assertEquals(expectedShortDuration, rdvManager.findFreeTime(120, startTime, endTime));
+        assertEquals(null,  rdvManager.findFreeTime(120, rdv2.getTime(), rdv3.getTime()));      // Test si rdv durant toute la période
+        assertEquals(null,  rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
     }
 
 }

@@ -1,4 +1,4 @@
-package main;
+package V1;
 
 import myrendezvous.Rendezvous;
 
