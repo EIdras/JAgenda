@@ -1,11 +1,13 @@
 package V1;
 // TODO : vérifier si ca fait pas de la merde de rentrer une durée négative de rendez-vous
+import V2.TurboTag;
 import myrendezvous.Rendezvous;
 import myrendezvous.RendezvousManager;
 import myrendezvous.exceptions.RendezvousNotFound;
 import myrendezvous.utils.StringComparator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RendezvousManagerImpl implements RendezvousManager {
 
@@ -30,7 +32,6 @@ public class RendezvousManagerImpl implements RendezvousManager {
     public void removeRendezvous(Rendezvous rendezvous) throws IllegalArgumentException, RendezvousNotFound {
         RendezvousImpl rendezvous1 = new RendezvousImpl(rendezvous.getTime(), rendezvous.getDuration(), rendezvous.getTitle(), rendezvous.getDescription());
         Calendar tag = rendezvous1.getTag();
-        RendezvousImpl rdv = treeMap.get(tag);
         try {
             treeMap.remove(tag);
         } catch (Error e){
@@ -39,9 +40,13 @@ public class RendezvousManagerImpl implements RendezvousManager {
 
     }
 
+    // TODO Tester méthode
     @Override
     public boolean removeRendezvous(Calendar calendar) {
-        return false;
+        if (treeMap.remove(calendar) == null){
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -59,27 +64,27 @@ public class RendezvousManagerImpl implements RendezvousManager {
         RendezvousImpl rendezvous1 = new RendezvousImpl(rendezvous.getTime(), rendezvous.getDuration(), rendezvous.getTitle(), rendezvous.getDescription());
         Calendar tag = rendezvous1.getTag();
         RendezvousImpl rdv = treeMap.get(tag);
+        if (rdv == null){
+            throw new RendezvousNotFound();
+        }
+        else {
+            rdv.setDuration(rendezvous.getDuration());
+            rdv.setTime(rendezvous.getTime());
+            rdv.setTitle(rendezvous.getTitle());
+            rdv.setDescription(rendezvous.getDescription());
 
-        rdv.setDuration(rendezvous.getDuration());
-        rdv.setTime(rendezvous.getTime());
-        rdv.setTitle(rendezvous.getTitle());
-        rdv.setDescription(rendezvous.getDescription());
+            treeMap.put(tag,rdv);
+            return rdv.clone();
+        }
 
-        treeMap.put(tag,rdv);
-        return rdv.clone();
     }
 
     @Override
     public List<Rendezvous> getRendezvousBetween(Calendar startTime, Calendar endTime) throws IllegalArgumentException {
+        Map<Calendar, RendezvousImpl> subMap = createSubMap(startTime, endTime);
         List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
-            // Si la valeur de l'instant de départ de l'entrée se situe entre
-            // la valeur de l'instant de départ de chacun des deux paramètres
-            if ((entry.getValue().getTime().getTime().compareTo(startTime.getTime())) >= 0
-                    && (entry.getValue().getTime().getTime().compareTo(endTime.getTime())) <= 0){
-                // On ajoute une copie de l'entrée à la liste
-                rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
-            }
+        for(Map.Entry<Calendar, RendezvousImpl> entry : subMap.entrySet()){
+            rendezvousList.add(entry.getValue());
         }
         return rendezvousList;
     }
@@ -124,53 +129,27 @@ public class RendezvousManagerImpl implements RendezvousManager {
         Calendar tomorrow = (Calendar) today.clone();
         tomorrow.add(Calendar.DAY_OF_MONTH, 1);
 
-        /*
-        // DEBUG
-        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        int i = 0;
-        for(Calendar entry : treeMap.keySet()) {
-            System.out.println(i + " : " + dateFormat.format(entry.getTime()) );
-            i++;
-        }
-        System.out.println("Today : " + dateFormat.format(today.getTime()) );
-        System.out.println("Tomorrow : " + dateFormat.format(tomorrow.getTime()) );
-        */
-
-        SortedMap<Calendar, RendezvousImpl> subMap = ((TreeMap)treeMap.clone()).subMap(today, true, tomorrow, false);
-        List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Calendar entry : subMap.keySet()) {
-            rendezvousList.add(subMap.get(entry));
-        }
+        Map<Calendar, RendezvousImpl> subMap = createSubMap(today, tomorrow);
+        List<Rendezvous> rendezvousList = subMap.values().stream().collect(Collectors.toList());
         return rendezvousList;
     }
 
+    // TODO optimiser en ne comparant que avec le rdv suivant (Pareil V2)
     @Override
     public boolean hasOverlap(Calendar startTime, Calendar endTime) {
         Map<Calendar, RendezvousImpl> subMap = createSubMap(startTime, endTime);
 
-        //DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");    // DEBUG
-        //System.out.println("START   : " + ((startTime==null) ? "null" : dateFormat.format(startTime.getTime())));      // DEBUG
-        //System.out.println("END     : " + ((endTime==null) ? "null" : dateFormat.format(endTime.getTime())));        // DEBUG
-
         boolean hasOverlap = false;
-        //System.out.println("Nombre de rdv trouvés : " + subMap.size());                 // DEBUG
-        //int i = 1;                                                                      // DEBUG
-        //for(Calendar subEntry : subMap.keySet()) {                                      // DEBUG
-        //    System.out.println("    - Entrée n°"+i+" : " + subMap.get(subEntry).getTitle()+ " - " + dateFormat.format(subMap.get(subEntry).getTime().getTime()));
-        //    i++;                                                                        // DEBUG
-        //}                                                                               // DEBUG
+
         for(Calendar subEntry : subMap.keySet()) { // On prend chaque Calendar de la subMap (rdv compris entre les deux paramètres)
             long thisStart      = subMap.get(subEntry).getTime().getTimeInMillis();
             long thisEnd        = thisStart + subMap.get(subEntry).getDuration() * 60000;
 
             SortedMap<Calendar, RendezvousImpl> tailMap = ((NavigableMap)subMap).tailMap(subEntry, false);
-            //System.out.println("    - Rendez-vous postérieurs au RDV actuel : " + tailMap.size());  // DEBUG
+
             for (Calendar tailEntry : tailMap.keySet()){   // On compare le Calendar avec tous les suivants de la tailMap (prochains rdvs)
 
                 long compareStart   = tailMap.get(tailEntry).getTime().getTimeInMillis();
-                long compareEnd     = compareStart + tailMap.get(tailEntry).getDuration() * 60000;
-                //System.out.println("thisStart = "+thisStart+", thisEnd = "+thisEnd+", compareStart = "+compareStart+", compareEnd = "+compareEnd);  // DEBUG
-
 
                 if (thisEnd >= compareStart){
                     hasOverlap = true;

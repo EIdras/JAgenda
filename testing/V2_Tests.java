@@ -1,15 +1,18 @@
-import V1.RendezvousImpl;
-import V1.RendezvousManagerImpl;
+import V2.RendezvousImpl;
+import V2.RendezvousManagerImpl;
+import V2.TurboTag;
 import myrendezvous.Rendezvous;
 import myrendezvous.exceptions.RendezvousNotFound;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Calendar;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class V1_Tests {
+public class V2_Tests {
     public RendezvousManagerImpl rdvManager;
     public Calendar c = Calendar.getInstance();
 
@@ -20,30 +23,111 @@ public class V1_Tests {
 
     @Test
     public void addRDV(){
-        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Michel");
+        RendezvousImpl rdv = new RendezvousImpl(c, 5, "Rendez-vous");
         rdvManager.addRendezvous(rdv);
-        c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv2 = new RendezvousImpl(c, 10, "Michel2");
+        c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+10);
+        RendezvousImpl rdv2 = new RendezvousImpl(c, 15, "Réunion");
         rdvManager.addRendezvous(rdv2);
-        c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv3 = new RendezvousImpl(c, 10, "Michel3");
+        c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+10);
+        RendezvousImpl rdv3 = new RendezvousImpl(c, 20, "Repas");
         rdvManager.addRendezvous(rdv3);
+
         assertEquals(3, rdvManager.getTreeMap().size());
     }
 
     @Test
+    public void addRDVSameStartTime(){
+        Calendar time1 = (Calendar) c.clone();
+        RendezvousImpl rdv1_1 = new RendezvousImpl(time1, 25, "instant1_rdv1");
+        RendezvousImpl rdv1_2 = new RendezvousImpl(time1, 50, "instant1_rdv2");
+        RendezvousImpl rdv1_3 = new RendezvousImpl(time1, 10, "instant1_rdv3");
+
+        Calendar time2 = (Calendar) c.clone();
+        time2.set(Calendar.MINUTE, c.get(Calendar.MINUTE)+10);
+        RendezvousImpl rdv2_1 = new RendezvousImpl(time2, 100, "instant2_rdv1");
+        RendezvousImpl rdv2_2 = new RendezvousImpl(time2, 60, "instant2_rdv2");
+        RendezvousImpl rdv2_3 = new RendezvousImpl(time2, 5, "instant2_rdv3");
+
+        rdvManager.addRendezvous(rdv1_1);
+        rdvManager.addRendezvous(rdv1_2);
+        rdvManager.addRendezvous(rdv1_3);
+        rdvManager.addRendezvous(rdv2_1);
+        rdvManager.addRendezvous(rdv2_2);
+        rdvManager.addRendezvous(rdv2_3);
+
+        int i = 0;
+        for (TurboTag entry: rdvManager.getTreeMap().keySet()) {
+            i++;
+            // Vérifie si les rendez-vous sont bien triés par instant de départ
+            // Si plusieurs rendez-vous commencent au même moment, ils sont triés par UUID et donc aléatoirement
+            if (i<=3) assertTrue(rdvManager.getTreeMap().get(entry).getTitle().contains("instant1"));
+            else assertTrue(rdvManager.getTreeMap().get(entry).getTitle().contains("instant2"));
+        }
+        assertEquals(6, rdvManager.getTreeMap().size());
+    }
+
+
+    @Test
     public void removeRDV() throws RendezvousNotFound {
-        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Francis");
-        rdvManager.addRendezvous(rdv);
+        RendezvousImpl rdv1 = new RendezvousImpl(c, 10, "Rdv");
+        rdvManager.addRendezvous(rdv1);
         c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv2 = new RendezvousImpl(c, 10, "Francis2");
+        RendezvousImpl rdv2 = new RendezvousImpl(c, 10, "Rdv2");
         rdvManager.addRendezvous(rdv2);
         c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv3 = new RendezvousImpl(c, 10, "Francis3");
+        RendezvousImpl rdv3 = new RendezvousImpl(c, 10, "Rdv3");
         rdvManager.addRendezvous(rdv3);
         assertEquals(3, rdvManager.getTreeMap().size());
+        //System.out.println("UUID param  : "+rdv2.getTag().getUuid());
         rdvManager.removeRendezvous(rdv2);
         assertEquals(2, rdvManager.getTreeMap().size());
+    }
+
+    @Test
+    public void removeRDVCalendar(){
+        RendezvousImpl rdv1 = new RendezvousImpl(c, 10, "PremierRDV");
+        RendezvousImpl rdv2 = new RendezvousImpl(c, 100, "SecondRDV");
+
+        rdvManager.addRendezvous(rdv2);
+        rdvManager.addRendezvous(rdv1);
+        assertEquals(2, rdvManager.getTreeMap().size());
+        rdvManager.removeRendezvous(c);
+        assertEquals(1, rdvManager.getTreeMap().size());
+    }
+    @Test
+    public void removeAllRDVBefore() throws RendezvousNotFound {
+        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Jack");
+        rdvManager.addRendezvous(rdv);
+
+        Calendar cl2 = (Calendar) c.clone();
+        cl2.set(Calendar.MINUTE,cl2.get(Calendar.MINUTE)+1);
+        RendezvousImpl rdv2 = new RendezvousImpl(cl2, 10, "Jack2");
+        rdvManager.addRendezvous(rdv2);
+
+        Calendar cl3 = (Calendar) cl2.clone();
+        cl3.set(Calendar.MINUTE,cl3.get(Calendar.MINUTE)+1);
+        Calendar removeBefore = (Calendar) cl3.clone();                             // Parametre
+        RendezvousImpl rdv3 = new RendezvousImpl(cl3, 10, "Jack3");
+        rdvManager.addRendezvous(rdv3);
+
+        Calendar cl4 = (Calendar) cl3.clone();
+        cl4.set(Calendar.MINUTE,cl4.get(Calendar.MINUTE)+1);
+        RendezvousImpl rdv4 = new RendezvousImpl(cl4, 10, "Jack4");
+        rdvManager.addRendezvous(rdv4);
+
+        assertEquals(4, rdvManager.getTreeMap().size());
+        rdvManager.removeAllRendezvousBefore(removeBefore);
+        assertEquals(1, rdvManager.getTreeMap().size());
+    }
+
+    @Test
+    public void updateRDV() throws RendezvousNotFound {
+        rdvManager = new RendezvousManagerImpl();
+        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Michel");
+        RendezvousImpl rdvToUpdate = (RendezvousImpl) rdvManager.addRendezvous(rdv);
+        rdvToUpdate.setDescription("Jean Louis et Michel");
+        RendezvousImpl rdvUpdated = (RendezvousImpl) rdvManager.updateRendezvous(rdvToUpdate);
+        assertEquals(true, rdvToUpdate.equals(rdvUpdated));
     }
 
     @Test
@@ -74,88 +158,6 @@ public class V1_Tests {
         assertEquals(2, returnList.size());
         List<Rendezvous> nullList = rdvManager.getRendezvousBetween(cl5, cl5);
         assertEquals(0, nullList.size());
-    }
-
-    @Test
-    public void hasOverlapNow() {
-        RendezvousImpl rdv = new RendezvousImpl(c, 25, "Fabrice");
-        rdvManager.addRendezvous(rdv);
-
-        Calendar clTest1 = (Calendar) c.clone();                        // Test1
-        clTest1.set(Calendar.MINUTE,clTest1.get(Calendar.MINUTE)+27);   // Test1
-
-        Calendar clTest2 = (Calendar) c.clone();                        // Test2
-        clTest2.set(Calendar.MINUTE,clTest2.get(Calendar.MINUTE)+40);   // Test2
-
-        Calendar cl2 = (Calendar) c.clone();
-        cl2.set(Calendar.MINUTE,cl2.get(Calendar.MINUTE)+10);
-        RendezvousImpl rdv2 = new RendezvousImpl(cl2, 12, "Fabrice2");
-        rdvManager.addRendezvous(rdv2);
-
-        Calendar cl3 = (Calendar) cl2.clone();
-        cl3.set(Calendar.MINUTE,cl3.get(Calendar.MINUTE)+10);
-
-        RendezvousImpl rdv3 = new RendezvousImpl(cl3, 8, "Fabrice3");
-        rdvManager.addRendezvous(rdv3);
-
-        Calendar cl4 = (Calendar) cl3.clone();
-        cl4.set(Calendar.MINUTE,cl4.get(Calendar.MINUTE)+10);
-        RendezvousImpl rdv4 = new RendezvousImpl(cl4, 5, "Fabrice4");
-        rdvManager.addRendezvous(rdv4);
-
-        assertEquals(true, rdvManager.hasOverlap(c,cl2));
-        assertEquals(true, rdvManager.hasOverlap(cl2,cl3));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest1));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(clTest1,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(null,c));
-        assertEquals(false, rdvManager.hasOverlap(cl3,null));
-        assertEquals(true, rdvManager.hasOverlap(cl2,null));
-        assertEquals(true, rdvManager.hasOverlap(null,cl3));
-    }
-
-    @Test
-    public void testHasOverlapTrue() {
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(2021, Calendar.DECEMBER, 5, 18, 50);
-        RendezvousImpl rdv = new RendezvousImpl(calendar, 50, "Meeting");
-
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.set(2021, Calendar.DECEMBER, 5, 18, 59);
-        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 20, "Meeting");
-
-        Calendar startTime = Calendar.getInstance();
-        startTime.set(2021, Calendar.DECEMBER, 5, 16, 50);
-        Calendar endTime = Calendar.getInstance();
-        endTime.set(2022, Calendar.JANUARY, 15, 18, 29);
-
-        rdvManager.addRendezvous(rdv);
-        rdvManager.addRendezvous(rdv1);
-
-        assertEquals(true, rdvManager.hasOverlap(startTime, endTime));
-    }
-
-    @Test
-    public void testHasOverlapFalse() {
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(2021, Calendar.DECEMBER, 5, 18, 50);
-        RendezvousImpl rdv = new RendezvousImpl(calendar, 50, "Meeting");
-
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.set(2021, Calendar.DECEMBER, 6, 18, 59);
-        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 20, "Meeting");
-
-        Calendar startTime = Calendar.getInstance();
-        startTime.set(2021, Calendar.DECEMBER, 5, 16, 50);
-        Calendar endTime = Calendar.getInstance();
-        endTime.set(2022, Calendar.DECEMBER, 18, 18, 29);
-
-        rdvManager.addRendezvous(rdv);
-        rdvManager.addRendezvous(rdv1);
-
-        assertEquals(false, rdvManager.hasOverlap(startTime, endTime));
     }
 
     @Test
@@ -227,65 +229,44 @@ public class V1_Tests {
     }
 
     @Test
-    public void updateRDV() throws RendezvousNotFound {
-        rdvManager = new RendezvousManagerImpl();
-        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Michel");
-        RendezvousImpl rdvToUpdate = (RendezvousImpl) rdvManager.addRendezvous(rdv);
-        rdvToUpdate.setDescription("Jean Louis et Michel");
-        RendezvousImpl rdvUpdated = (RendezvousImpl) rdvManager.updateRendezvous(rdvToUpdate);
-        assertEquals(true, rdvToUpdate.equals(rdvUpdated));
-    }
-
-    @Test
-    public void removeAllRDVBefore() throws RendezvousNotFound {
-        RendezvousImpl rdv = new RendezvousImpl(c, 10, "Jack");
+    public void hasOverlap() {
+        RendezvousImpl rdv = new RendezvousImpl(c, 25, "Fabrice");
         rdvManager.addRendezvous(rdv);
 
+        Calendar clTest1 = (Calendar) c.clone();                        // Test1
+        clTest1.set(Calendar.MINUTE,clTest1.get(Calendar.MINUTE)+27);   // Test1
+
+        Calendar clTest2 = (Calendar) c.clone();                        // Test2
+        clTest2.set(Calendar.MINUTE,clTest2.get(Calendar.MINUTE)+40);   // Test2
+
         Calendar cl2 = (Calendar) c.clone();
-        cl2.set(Calendar.MINUTE,cl2.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv2 = new RendezvousImpl(cl2, 10, "Jack2");
+        cl2.set(Calendar.MINUTE,cl2.get(Calendar.MINUTE)+10);
+        RendezvousImpl rdv2 = new RendezvousImpl(cl2, 12, "Fabrice2");
         rdvManager.addRendezvous(rdv2);
 
         Calendar cl3 = (Calendar) cl2.clone();
-        cl3.set(Calendar.MINUTE,cl3.get(Calendar.MINUTE)+1);
-        Calendar removeBefore = (Calendar) cl3.clone();                             // Parametre
-        RendezvousImpl rdv3 = new RendezvousImpl(cl3, 10, "Jack3");
+        cl3.set(Calendar.MINUTE,cl3.get(Calendar.MINUTE)+10);
+
+        RendezvousImpl rdv3 = new RendezvousImpl(cl3, 8, "Fabrice3");
         rdvManager.addRendezvous(rdv3);
 
         Calendar cl4 = (Calendar) cl3.clone();
-        cl4.set(Calendar.MINUTE,cl4.get(Calendar.MINUTE)+1);
-        RendezvousImpl rdv4 = new RendezvousImpl(cl4, 10, "Jack4");
+        cl4.set(Calendar.MINUTE,cl4.get(Calendar.MINUTE)+10);
+        RendezvousImpl rdv4 = new RendezvousImpl(cl4, 5, "Fabrice4");
         rdvManager.addRendezvous(rdv4);
 
-        assertEquals(4, rdvManager.getTreeMap().size());
-        rdvManager.removeAllRendezvousBefore(removeBefore);
-        assertEquals(1, rdvManager.getTreeMap().size());
+        assertEquals(true, rdvManager.hasOverlap(c,cl2));
+        assertEquals(true, rdvManager.hasOverlap(cl2,cl3));
+        assertEquals(true, rdvManager.hasOverlap(cl2,clTest1));
+        assertEquals(true, rdvManager.hasOverlap(cl2,clTest2));
+        assertEquals(false, rdvManager.hasOverlap(clTest1,clTest2));
+        assertEquals(false, rdvManager.hasOverlap(null,c));
+        assertEquals(false, rdvManager.hasOverlap(cl3,null));
+        assertEquals(true, rdvManager.hasOverlap(cl2,null));
+        assertEquals(true, rdvManager.hasOverlap(null,cl3));
     }
 
-    @Test
-    public void findRDVTitleEqual() throws RendezvousNotFound {
-        String title = "Lorem ipsum Dolor sit amet";
-        RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
-        rdvManager.addRendezvous(rdv);
-
-        assertEquals(rdv,rdvManager.findRendezvousByTitleEqual(title, null, null).get(0));                                // Même titre
-        assertEquals(rdv,rdvManager.findRendezvousByTitleEqual("lorem ipsum dolor sit amet", null, null).get(0));   // Sensibilité à la casse
-        assertTrue(rdvManager.findRendezvousByTitleEqual("LoremipsumDolorsitamet", null, null).isEmpty());          // Sans espaces
-    }
-
-    @Test
-    public void findRDVTitleALike() throws RendezvousNotFound {
-        String title = "Lorem ipsum Dolor sit amet";
-        RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
-        rdvManager.addRendezvous(rdv);
-
-        assertEquals(rdv,rdvManager.findRendezvousByTitleALike(title, null, null).get(0));                                // Même titre
-        assertEquals(rdv,rdvManager.findRendezvousByTitleALike("lorem ipsum dolor sit amet", null, null).get(0));   // Sensibilité à la casse
-        assertFalse(rdvManager.findRendezvousByTitleALike("LoremipsumDolorsitamet", null, null).isEmpty());         // Sans espaces (ressemblant)
-        assertFalse(rdvManager.findRendezvousByTitleALike("lo em ipsdm daaor szt amet", null, null).isEmpty());     // Est ressemblant
-        assertTrue(rdvManager.findRendezvousByTitleALike("lnnen ipasm daaot sst zeet", null, null).isEmpty());      // N'est pas assez ressemblant
-    }
-
+    // TODO : Modifier le test pour qu'il y ait 2 rdv qui commencent au meme moment
     @Test
     public void findFreeTime(){
 
@@ -347,4 +328,27 @@ public class V1_Tests {
         assertEquals(null,  rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
     }
 
+    @Test
+    public void findRDVTitleEqual() throws RendezvousNotFound {
+        String title = "Lorem ipsum Dolor sit amet";
+        RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
+        rdvManager.addRendezvous(rdv);
+
+        assertEquals(rdv,rdvManager.findRendezvousByTitleEqual(title, null, null).get(0));                                // Même titre
+        assertEquals(rdv,rdvManager.findRendezvousByTitleEqual("lorem ipsum dolor sit amet", null, null).get(0));   // Sensibilité à la casse
+        assertTrue(rdvManager.findRendezvousByTitleEqual("LoremipsumDolorsitamet", null, null).isEmpty());          // Sans espaces
+    }
+
+    @Test
+    public void findRDVTitleALike() throws RendezvousNotFound {
+        String title = "Lorem ipsum Dolor sit amet";
+        RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
+        rdvManager.addRendezvous(rdv);
+
+        assertEquals(rdv,rdvManager.findRendezvousByTitleALike(title, null, null).get(0));                                // Même titre
+        assertEquals(rdv,rdvManager.findRendezvousByTitleALike("lorem ipsum dolor sit amet", null, null).get(0));   // Sensibilité à la casse
+        assertFalse(rdvManager.findRendezvousByTitleALike("LoremipsumDolorsitamet", null, null).isEmpty());         // Sans espaces (ressemblant)
+        assertFalse(rdvManager.findRendezvousByTitleALike("lo em ipsdm daaor szt amet", null, null).isEmpty());     // Est ressemblant
+        assertTrue(rdvManager.findRendezvousByTitleALike("lnnen ipasm daaot sst zeet", null, null).isEmpty());      // N'est pas assez ressemblant
+    }
 }
