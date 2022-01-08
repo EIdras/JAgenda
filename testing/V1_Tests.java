@@ -29,6 +29,12 @@ public class V1_Tests {
         RendezvousImpl rdv3 = new RendezvousImpl(c, 10, "Michel3");
         rdvManager.addRendezvous(rdv3);
         assertEquals(3, rdvManager.getTreeMap().size());
+
+        c.set(Calendar.MINUTE,c.get(Calendar.MINUTE)+1);
+        RendezvousImpl rdvNeg = new RendezvousImpl(c, -10, "Négatif");
+        rdvManager.addRendezvous(rdvNeg);
+        assertEquals(4, rdvManager.getTreeMap().size());
+
     }
 
     @Test
@@ -103,59 +109,15 @@ public class V1_Tests {
         RendezvousImpl rdv4 = new RendezvousImpl(cl4, 5, "Fabrice4");
         rdvManager.addRendezvous(rdv4);
 
-        assertEquals(true, rdvManager.hasOverlap(c,cl2));
-        assertEquals(true, rdvManager.hasOverlap(cl2,cl3));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest1));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(clTest1,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(null,c));
-        assertEquals(false, rdvManager.hasOverlap(cl3,null));
-        assertEquals(true, rdvManager.hasOverlap(cl2,null));
-        assertEquals(true, rdvManager.hasOverlap(null,cl3));
-    }
-
-    @Test
-    public void testHasOverlapTrue() {
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(2021, Calendar.DECEMBER, 5, 18, 50);
-        RendezvousImpl rdv = new RendezvousImpl(calendar, 50, "Meeting");
-
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.set(2021, Calendar.DECEMBER, 5, 18, 59);
-        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 20, "Meeting");
-
-        Calendar startTime = Calendar.getInstance();
-        startTime.set(2021, Calendar.DECEMBER, 5, 16, 50);
-        Calendar endTime = Calendar.getInstance();
-        endTime.set(2022, Calendar.JANUARY, 15, 18, 29);
-
-        rdvManager.addRendezvous(rdv);
-        rdvManager.addRendezvous(rdv1);
-
-        assertEquals(true, rdvManager.hasOverlap(startTime, endTime));
-    }
-
-    @Test
-    public void testHasOverlapFalse() {
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(2021, Calendar.DECEMBER, 5, 18, 50);
-        RendezvousImpl rdv = new RendezvousImpl(calendar, 50, "Meeting");
-
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.set(2021, Calendar.DECEMBER, 6, 18, 59);
-        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 20, "Meeting");
-
-        Calendar startTime = Calendar.getInstance();
-        startTime.set(2021, Calendar.DECEMBER, 5, 16, 50);
-        Calendar endTime = Calendar.getInstance();
-        endTime.set(2022, Calendar.DECEMBER, 18, 18, 29);
-
-        rdvManager.addRendezvous(rdv);
-        rdvManager.addRendezvous(rdv1);
-
-        assertEquals(false, rdvManager.hasOverlap(startTime, endTime));
+        assertTrue(rdvManager.hasOverlap(c, cl2));
+        assertTrue(rdvManager.hasOverlap(cl2, cl3));
+        assertTrue(rdvManager.hasOverlap(cl2, clTest1));
+        assertTrue(rdvManager.hasOverlap(cl2, clTest2));
+        assertFalse(rdvManager.hasOverlap(clTest1, clTest2));
+        assertFalse(rdvManager.hasOverlap(null, c));
+        assertFalse(rdvManager.hasOverlap(cl3, null));
+        assertTrue(rdvManager.hasOverlap(cl2, null));
+        assertTrue(rdvManager.hasOverlap(null, cl3));
     }
 
     @Test
@@ -227,17 +189,17 @@ public class V1_Tests {
     }
 
     @Test
-    public void updateRDV() throws RendezvousNotFound {
+    public void updateRDV() {
         rdvManager = new RendezvousManagerImpl();
         RendezvousImpl rdv = new RendezvousImpl(c, 10, "Michel");
         RendezvousImpl rdvToUpdate = (RendezvousImpl) rdvManager.addRendezvous(rdv);
         rdvToUpdate.setDescription("Jean Louis et Michel");
         RendezvousImpl rdvUpdated = (RendezvousImpl) rdvManager.updateRendezvous(rdvToUpdate);
-        assertEquals(true, rdvToUpdate.equals(rdvUpdated));
+        assertEquals(rdvToUpdate, rdvUpdated);
     }
 
     @Test
-    public void removeAllRDVBefore() throws RendezvousNotFound {
+    public void removeAllRDVBefore() {
         RendezvousImpl rdv = new RendezvousImpl(c, 10, "Jack");
         rdvManager.addRendezvous(rdv);
 
@@ -263,7 +225,7 @@ public class V1_Tests {
     }
 
     @Test
-    public void findRDVTitleEqual() throws RendezvousNotFound {
+    public void findRDVTitleEqual() {
         String title = "Lorem ipsum Dolor sit amet";
         RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
         rdvManager.addRendezvous(rdv);
@@ -274,7 +236,7 @@ public class V1_Tests {
     }
 
     @Test
-    public void findRDVTitleALike() throws RendezvousNotFound {
+    public void findRDVTitleALike() {
         String title = "Lorem ipsum Dolor sit amet";
         RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
         rdvManager.addRendezvous(rdv);
@@ -330,9 +292,13 @@ public class V1_Tests {
 
 
         Calendar expectedLongDuration = Calendar.getInstance();                                      // expectedLongDuration
+        expectedLongDuration.set(Calendar.SECOND, 0);
+        expectedLongDuration.set(Calendar.MILLISECOND, 0);
         expectedLongDuration.set(2021, Calendar.DECEMBER, 10, 13, 0);      // fin de rdv4 soit le 10 décembre 13h00
 
         Calendar expectedShortDuration = Calendar.getInstance();                                     // expectedShortDuration
+        expectedShortDuration.set(Calendar.SECOND, 0);
+        expectedShortDuration.set(Calendar.MILLISECOND, 0);
         expectedShortDuration.set(2021, Calendar.DECEMBER, 9, 14, 0);      // fin de rdv3 soit le 9 décembre 14h00
 
         rdvManager.addRendezvous(rdv1);
@@ -345,8 +311,8 @@ public class V1_Tests {
 
         assertEquals(expectedLongDuration,  rdvManager.findFreeTime(1440, startTime, endTime));
         assertEquals(expectedShortDuration, rdvManager.findFreeTime(120, startTime, endTime));
-        assertEquals(null,  rdvManager.findFreeTime(120, rdv2.getTime(), rdv3.getTime()));      // Test si rdv durant toute la période
-        assertEquals(null,  rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
+        assertNull(rdvManager.findFreeTime(120, rdv2.getTime(), rdv3.getTime()));      // Test si rdv durant toute la période
+        assertNull(rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
     }
 
 }

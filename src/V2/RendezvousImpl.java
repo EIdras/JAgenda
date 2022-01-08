@@ -2,6 +2,8 @@ package V2;
 
 import myrendezvous.Rendezvous;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.UUID;
@@ -12,10 +14,12 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
     int duration;
     String title;
     String description;
-    TurboTag tag;
+    UidTag tag;
 
     public RendezvousImpl(Calendar time, int duration, String title) {
-        this.tag = new TurboTag((Calendar) time.clone(), UUID.randomUUID());
+        time.set(Calendar.SECOND, 0);
+        time.set(Calendar.MILLISECOND, 0);
+        this.tag = new UidTag((Calendar) time.clone(), UUID.randomUUID());
         this.time = time;
         this.duration = duration;
         this.title = title;
@@ -77,7 +81,7 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
         this.description = s;
     }
 
-    public TurboTag getTag() {
+    public UidTag getTag() {
         return tag;
     }
 
@@ -87,6 +91,15 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
         RendezvousImpl that = (RendezvousImpl) o;
         return duration == that.duration && time.equals(that.time) && title.equals(that.title) && Objects.equals(description, that.description) && tag.equals(that.tag);
+    }
+
+    @Override
+    public String toString() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        return  "\"" + title + "\" : " + dateFormat.format(time.getTime())
+                + " - " + duration + " min"
+                + ((description == null)? "" : "\n(\""+ description +"\")");
+
     }
 
 }

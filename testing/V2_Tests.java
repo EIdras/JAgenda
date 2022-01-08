@@ -1,11 +1,13 @@
 import V2.RendezvousImpl;
 import V2.RendezvousManagerImpl;
-import V2.TurboTag;
+import V2.UidTag;
 import myrendezvous.Rendezvous;
 import myrendezvous.exceptions.RendezvousNotFound;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
@@ -56,7 +58,7 @@ public class V2_Tests {
         rdvManager.addRendezvous(rdv2_3);
 
         int i = 0;
-        for (TurboTag entry: rdvManager.getTreeMap().keySet()) {
+        for (UidTag entry: rdvManager.getTreeMap().keySet()) {
             i++;
             // Vérifie si les rendez-vous sont bien triés par instant de départ
             // Si plusieurs rendez-vous commencent au même moment, ils sont triés par UUID et donc aléatoirement
@@ -95,7 +97,7 @@ public class V2_Tests {
         assertEquals(1, rdvManager.getTreeMap().size());
     }
     @Test
-    public void removeAllRDVBefore() throws RendezvousNotFound {
+    public void removeAllRDVBefore() {
         RendezvousImpl rdv = new RendezvousImpl(c, 10, "Jack");
         rdvManager.addRendezvous(rdv);
 
@@ -127,7 +129,7 @@ public class V2_Tests {
         RendezvousImpl rdvToUpdate = (RendezvousImpl) rdvManager.addRendezvous(rdv);
         rdvToUpdate.setDescription("Jean Louis et Michel");
         RendezvousImpl rdvUpdated = (RendezvousImpl) rdvManager.updateRendezvous(rdvToUpdate);
-        assertEquals(true, rdvToUpdate.equals(rdvUpdated));
+        assertEquals(rdvToUpdate, rdvUpdated);
     }
 
     @Test
@@ -255,28 +257,30 @@ public class V2_Tests {
         RendezvousImpl rdv4 = new RendezvousImpl(cl4, 5, "Fabrice4");
         rdvManager.addRendezvous(rdv4);
 
-        assertEquals(true, rdvManager.hasOverlap(c,cl2));
-        assertEquals(true, rdvManager.hasOverlap(cl2,cl3));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest1));
-        assertEquals(true, rdvManager.hasOverlap(cl2,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(clTest1,clTest2));
-        assertEquals(false, rdvManager.hasOverlap(null,c));
-        assertEquals(false, rdvManager.hasOverlap(cl3,null));
-        assertEquals(true, rdvManager.hasOverlap(cl2,null));
-        assertEquals(true, rdvManager.hasOverlap(null,cl3));
+        assertTrue(rdvManager.hasOverlap(c, cl2));
+        assertTrue(rdvManager.hasOverlap(cl2, cl3));
+        assertTrue(rdvManager.hasOverlap(cl2, clTest1));
+        assertTrue(rdvManager.hasOverlap(cl2, clTest2));
+        assertFalse(rdvManager.hasOverlap(clTest1, clTest2));
+        assertFalse(rdvManager.hasOverlap(null, c));
+        assertFalse(rdvManager.hasOverlap(cl3, null));
+        assertTrue(rdvManager.hasOverlap(cl2, null));
+        assertTrue(rdvManager.hasOverlap(null, cl3));
     }
 
-    // TODO : Modifier le test pour qu'il y ait 2 rdv qui commencent au meme moment
+
     @Test
     public void findFreeTime(){
 
         /*
-                                        [expectedShort]  [expectedLong]
-                                                 :         :
-                             startTime           :         :               endTime
-                                 |     rdv3      V         :                  |
-            rdv1   rdv2          |      |=======>     rdv4 V          rdv5    |
+                                                          [expected]
+                                                              :
+                             startTime                        :            endTime
+                                 |     rdv3                   :               |
+            rdv1   rdv2          |      |=======>     rdv4    V       rdv5    |
         ]----|=>----|============|==========>---------|===>------------|======|==>--------------->
+                                        |====================>|
+                                       rdv6
          */
 
         Calendar calendar1 = Calendar.getInstance();
@@ -291,7 +295,7 @@ public class V2_Tests {
         calendar3.set(2021, Calendar.DECEMBER, 8, 19, 15);
         RendezvousImpl rdv3 = new RendezvousImpl(calendar3, 1125 /* finit le 9 à 14h */, "Soirée");
 
-        /* Il y a 23h de temps libre entre rdv3 et rdv4 soit 1380 minutes */
+        /* Il y a 22h de temps libre entre rdv3 et rdv4 soit 1380 minutes */
 
         Calendar calendar4 = Calendar.getInstance();
         calendar4.set(2021, Calendar.DECEMBER, 10, 12, 0);
@@ -304,32 +308,39 @@ public class V2_Tests {
         RendezvousImpl rdv5 = new RendezvousImpl(calendar5, 240 /* finit le 12 à 13h */, "Réunion");
 
         Calendar startTime = Calendar.getInstance();                                    // startTime
+        startTime.set(Calendar.SECOND, 0);
+        startTime.set(Calendar.MILLISECOND, 0);
         startTime.set(2021, Calendar.DECEMBER, 8, 12, 30);    // 8 décembre 12h30
 
         Calendar endTime = Calendar.getInstance();                                      // endTime
+        endTime.set(Calendar.SECOND, 0);
+        endTime.set(Calendar.MILLISECOND, 0);
         endTime.set(2021, Calendar.DECEMBER, 12, 12, 0);      // 12 décembre 12h00
 
+        Calendar calendar6 = Calendar.getInstance();
+        calendar6.set(2021, Calendar.DECEMBER, 8, 19, 15);
+        RendezvousImpl rdv6 = new RendezvousImpl(calendar6, 2880 /* finit le 10 à 19h15 */, "Boss Battle");
 
-        Calendar expectedLongDuration = Calendar.getInstance();                                      // expectedLongDuration
-        expectedLongDuration.set(2021, Calendar.DECEMBER, 10, 13, 0);      // fin de rdv4 soit le 10 décembre 13h00
-
-        Calendar expectedShortDuration = Calendar.getInstance();                                     // expectedShortDuration
-        expectedShortDuration.set(2021, Calendar.DECEMBER, 9, 14, 0);      // fin de rdv3 soit le 9 décembre 14h00
+        Calendar expectedDuration = Calendar.getInstance();                                      // expectedDuration
+        expectedDuration.set(Calendar.SECOND, 0);
+        expectedDuration.set(Calendar.MILLISECOND, 0);
+        expectedDuration.set(2021, Calendar.DECEMBER, 10, 19, 15);      // fin de rdv4 soit le 10 décembre 13h00
 
         rdvManager.addRendezvous(rdv1);
         rdvManager.addRendezvous(rdv2);
         rdvManager.addRendezvous(rdv3);
         rdvManager.addRendezvous(rdv4);
         rdvManager.addRendezvous(rdv5);
+        rdvManager.addRendezvous(rdv6);
 
-        assertEquals(expectedLongDuration,  rdvManager.findFreeTime(1440, startTime, endTime));
-        assertEquals(expectedShortDuration, rdvManager.findFreeTime(120, startTime, endTime));
-        assertEquals(null,  rdvManager.findFreeTime(120, rdv2.getTime(), rdv3.getTime()));      // Test si rdv durant toute la période
-        assertEquals(null,  rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
+        assertEquals(expectedDuration,  rdvManager.findFreeTime(1440, startTime, endTime));
+        assertNull(rdvManager.findFreeTime(120, rdv2.getTime(), rdv3.getTime()));      // Test si rdv durant toute la période
+        assertNull(rdvManager.findFreeTime(5000, rdv2.getTime(), rdv3.getTime()));     // Test si duration trop élevé pour la période
     }
 
+
     @Test
-    public void findRDVTitleEqual() throws RendezvousNotFound {
+    public void findRDVTitleEqual() {
         String title = "Lorem ipsum Dolor sit amet";
         RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
         rdvManager.addRendezvous(rdv);
@@ -340,7 +351,7 @@ public class V2_Tests {
     }
 
     @Test
-    public void findRDVTitleALike() throws RendezvousNotFound {
+    public void findRDVTitleALike() {
         String title = "Lorem ipsum Dolor sit amet";
         RendezvousImpl rdv = new RendezvousImpl(c, 30, title);
         rdvManager.addRendezvous(rdv);
