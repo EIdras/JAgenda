@@ -2,6 +2,8 @@ package V1;
 
 import myrendezvous.Rendezvous;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Objects;
 
@@ -93,4 +95,12 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
         return duration == that.duration && time.equals(that.time) && title.equals(that.title) && Objects.equals(description, that.description) && tag.equals(that.tag);
     }
 
+    @Override
+    public String toString() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        return  "\"" + title + "\" : " + dateFormat.format(time.getTime())
+                + " - " + duration + " min"
+                + ((description == null)? "" : "\n(\""+ description +"\")");
+
+    }
 }

@@ -300,7 +300,7 @@ public class V1_Tests {
 
         Calendar calendar1 = Calendar.getInstance();
         calendar1.set(2021, Calendar.DECEMBER, 5, 16, 0);
-        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 15, "Goûter");
+        RendezvousImpl rdv1 = new RendezvousImpl(calendar1, 15, "Goûter", "Vive le goûter");
 
         Calendar calendar2 = Calendar.getInstance();
         calendar2.set(2021, Calendar.DECEMBER, 7, 12, 30);
@@ -340,6 +340,8 @@ public class V1_Tests {
         rdvManager.addRendezvous(rdv3);
         rdvManager.addRendezvous(rdv4);
         rdvManager.addRendezvous(rdv5);
+
+        System.out.println(rdv1);
 
         assertEquals(expectedLongDuration,  rdvManager.findFreeTime(1440, startTime, endTime));
         assertEquals(expectedShortDuration, rdvManager.findFreeTime(120, startTime, endTime));

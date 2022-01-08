@@ -1,6 +1,6 @@
 package V1;
 // TODO : vérifier si ca fait pas de la merde de rentrer une durée négative de rendez-vous
-import V2.TurboTag;
+
 import myrendezvous.Rendezvous;
 import myrendezvous.RendezvousManager;
 import myrendezvous.exceptions.RendezvousNotFound;
@@ -22,16 +22,15 @@ public class RendezvousManagerImpl implements RendezvousManager {
             // Copie le rendez-vous passé en paramètre
             RendezvousImpl rdvToAdd = new RendezvousImpl(rdv.getTime(), rdv.getDuration(), rdv.getTitle(), rdv.getDescription());
             RendezvousImpl rdvToClone = rdvToAdd.clone();
-            // Sauvegarde la copie dans sa structure interne
+            // Sauvegarde la copie dans sa structure interne + tagging
             treeMap.put(rdvToClone.getTag(), rdvToClone);
-            // Créée une copie de la structure et y ajoute un tagging (ensemble d'attributs immuables)
             return rdvToClone.clone();
     }
 
     @Override
-    public void removeRendezvous(Rendezvous rendezvous) throws IllegalArgumentException, RendezvousNotFound {
-        RendezvousImpl rendezvous1 = new RendezvousImpl(rendezvous.getTime(), rendezvous.getDuration(), rendezvous.getTitle(), rendezvous.getDescription());
-        Calendar tag = rendezvous1.getTag();
+    public void removeRendezvous(Rendezvous rdvToRemove) throws IllegalArgumentException, RendezvousNotFound {
+        RendezvousImpl rdv = new RendezvousImpl(rdvToRemove.getTime(), rdvToRemove.getDuration(), rdvToRemove.getTitle(), rdvToRemove.getDescription());
+        Calendar tag = rdv.getTag();
         try {
             treeMap.remove(tag);
         } catch (Error e){
@@ -40,19 +39,14 @@ public class RendezvousManagerImpl implements RendezvousManager {
 
     }
 
-    // TODO Tester méthode
     @Override
     public boolean removeRendezvous(Calendar calendar) {
-        if (treeMap.remove(calendar) == null){
-            return false;
-        }
-        return true;
+        return treeMap.remove(calendar) != null;
     }
 
     @Override
     public void removeAllRendezvousBefore(Calendar calendar) throws IllegalArgumentException {
-        // Création d'une headMap qui correspond à une vue d'une portion de la treeMap
-        // dont les valeurs de clés sont inférieures ou égales au paramètre calendar
+        // Création d'une headMap qui correspond à une vue d'une portion de la treeMap pour les rendez-vous débutant avant le paramètre calendar
         SortedMap<Calendar, RendezvousImpl> headMap = ((TreeMap)treeMap.clone()).headMap(calendar,true);
         for(Calendar entry : headMap.keySet()) {
             treeMap.remove(entry);
@@ -82,38 +76,21 @@ public class RendezvousManagerImpl implements RendezvousManager {
     @Override
     public List<Rendezvous> getRendezvousBetween(Calendar startTime, Calendar endTime) throws IllegalArgumentException {
         Map<Calendar, RendezvousImpl> subMap = createSubMap(startTime, endTime);
-        List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Map.Entry<Calendar, RendezvousImpl> entry : subMap.entrySet()){
-            rendezvousList.add(entry.getValue());
-        }
+        List<Rendezvous> rendezvousList = subMap.values().stream().collect(Collectors.toList());
         return rendezvousList;
     }
 
     @Override
     public List<Rendezvous> getRendezvousBefore(Calendar calendar) throws IllegalArgumentException {
-        List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
-            // Si la valeur de l'instant de départ de l'argument se situe avant
-            // la valeur de l'instant de départ de l'entrée
-            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) <= 0){
-                // On ajoute une copie de l'entrée à la liste
-                rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
-            }
-        }
+        Map<Calendar, RendezvousImpl> headMap = createSubMap(null, calendar);
+        List<Rendezvous> rendezvousList = headMap.values().stream().collect(Collectors.toList());
         return rendezvousList;
     }
 
     @Override
     public List<Rendezvous> getRendezvousAfter(Calendar calendar) throws IllegalArgumentException {
-        List<Rendezvous> rendezvousList = new ArrayList<>();
-        for(Map.Entry<Calendar, RendezvousImpl> entry : treeMap.entrySet()) {
-            // Si la valeur de l'instant de départ de l'argument se situe après
-            // la valeur de l'instant de départ de l'entrée
-            if ((entry.getValue().getTime().getTime().compareTo(calendar.getTime())) >= 0){
-                // On ajoute une copie de l'entrée à la liste
-                rendezvousList.add(((treeMap.get(entry.getKey()))).clone());
-            }
-        }
+        Map<Calendar, RendezvousImpl> headMap = createSubMap(calendar, null);
+        List<Rendezvous> rendezvousList = headMap.values().stream().collect(Collectors.toList());
         return rendezvousList;
     }
 
@@ -161,16 +138,16 @@ public class RendezvousManagerImpl implements RendezvousManager {
         return hasOverlap;
     }
 
-        @Override
+    // TODO : Virer commentaires, gérer avec les secondes  / millisecondes à zéro sinon problemes
+    @Override
     public Calendar findFreeTime(int duration, Calendar startTime, Calendar endTime) throws IllegalArgumentException {
 
-            System.out.println("FIND FREE TIME APPELLEE");
         // On crée une headMap qui contient tous les rendez-vous débutant avant startTime
         Map<Calendar, RendezvousImpl> headMap = createSubMap(null, startTime);
-        System.out.println("Nombre de RDV débutant avant startTime : "+headMap.size());
+        // Définition de variables représentant les limites de recherche
         long limiteBasse = startTime.getTimeInMillis();
         long limiteHaute = endTime.getTimeInMillis();
-        Calendar freeTimeStart;
+        Calendar freeTimeStart;     // Résultat à retourner
         /*
                            startTime            endTime
                 ]==============|-------------------|-------------->
@@ -181,7 +158,6 @@ public class RendezvousManagerImpl implements RendezvousManager {
                 Iterator<Calendar> headMapIt = headMap.keySet().iterator();
                 while (limiteBasse < endTime.getTimeInMillis() && headMapIt.hasNext()){
                     Calendar entry = headMapIt.next();
-                    System.out.println("    - " + treeMap.get(entry).getTitle());
                     long entryStart = headMap.get(entry).getTime().getTimeInMillis();
                     long entryEnd = entryStart + headMap.get(entry).getDuration() * 60000;
                     if (entryEnd > limiteBasse){
@@ -189,8 +165,8 @@ public class RendezvousManagerImpl implements RendezvousManager {
                     }
                 }
                 // Test si un rendez-vous débutant avant startTime se termine après endTime
+                // Si c'est le cas, il occupe tout le temps, on renvoie donc null
                 if (limiteBasse >= endTime.getTimeInMillis()){
-                    System.out.println("Un rendez-vous est prévu pendant toute la période donnée.");
                     return null;
                 }
             }
@@ -228,12 +204,11 @@ public class RendezvousManagerImpl implements RendezvousManager {
                     limiteBasseCalendar.setTimeInMillis(limiteBasse);
                     betweenMap = createSubMap(oldLimiteBasseCalendar, limiteBasseCalendar);
                 }
-                System.out.println("- - - - - - - - - - - - ");
-            }
 
+            }
         /*
-                           startTime            endTime
-                ]--------------|-----|=============|-------------->
+                           startTime                     endTime
+                ]--------------|-----|======================|----->
                                  limiteBasse
          */
         SortedMap<Calendar, RendezvousImpl> subMap = (SortedMap) createSubMap(limiteBasseCalendar, endTime);
@@ -249,29 +224,12 @@ public class RendezvousManagerImpl implements RendezvousManager {
             limiteHauteCalendar = firstRDV.getTime();
         }
 
-        // Si la durée du premier créneau dispo. est supérieure ou égale à la durée recherchée,
-        // la valeur à retourner est la limite basse soit l'instant de départ de ce créneau
-
-            /*
-            DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");    // DEBUG
-            Calendar c0 = Calendar.getInstance();
-            Calendar c1 = Calendar.getInstance();
-            Calendar c2 = Calendar.getInstance();
-            c0.setTimeInMillis(limiteBasse);
-            c1.setTimeInMillis(limiteBasse + (duration * 60000));
-            c2.setTimeInMillis(limiteHaute);
-            System.out.println("limiteBasse            : " + dateFormat.format(c0.getTime()));      // DEBUG
-            System.out.println("limiteBasse + duration : " + dateFormat.format(c1.getTime()));      // DEBUG
-            System.out.println("début limiteHaute      : " + dateFormat.format(c2.getTime()));      // DEBUG
-
-             */
+        // Si la durée passée en paramètre est dispo entre la limite basse et haute, on renvoie l'instant de départ
         if ((limiteBasse + (duration * 60000)) <= limiteHaute){
-            System.out.println(" ~~~ FREE TIME FOUND ~~~ ");
             freeTimeStart = limiteBasseCalendar;
         }
         // Si la durée libre n'est pas suffisante, on cherche un autre créneau dispo après, en appellant récursivement la méthode
         else {
-            System.out.println("    ---> Créneau libre trouvé mais durée insuffisante, recherche du prochain créneau");
             freeTimeStart = findFreeTime(duration, limiteHauteCalendar, endTime);
         }
         return freeTimeStart;
