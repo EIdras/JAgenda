@@ -257,6 +257,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
         return returnList;
     }
 
+    // Crée et retourne une subMap / headMap / tailMap suivant la valeur des paramètres
     private Map<UidTag, RendezvousImpl> createSubMap(UidTag startTime, UidTag endTime) {
         Map<UidTag, RendezvousImpl> subMap;
         if (!(startTime == null)){

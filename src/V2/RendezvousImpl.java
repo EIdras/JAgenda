@@ -19,9 +19,9 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
     public RendezvousImpl(Calendar time, int duration, String title) {
         time.set(Calendar.SECOND, 0);
         time.set(Calendar.MILLISECOND, 0);
-        this.tag = new UidTag((Calendar) time.clone(), UUID.randomUUID());
+        this.tag = new UidTag((Calendar) time.clone(), UUID.randomUUID());  // Génération d'un tag avec un UUID aléatoire
         this.time = time;
-        this.duration = duration;
+        this.duration = (duration == 0) ? 1 : Math.abs(duration);           // Gère les durées négatives et nulles
         this.title = title;
     }
 

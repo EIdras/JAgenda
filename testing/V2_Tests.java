@@ -3,16 +3,12 @@ import V2.RendezvousManagerImpl;
 import V2.UidTag;
 import myrendezvous.Rendezvous;
 import myrendezvous.exceptions.RendezvousNotFound;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class V2_Tests {
     public RendezvousManagerImpl rdvManager;

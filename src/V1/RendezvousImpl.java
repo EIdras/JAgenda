@@ -15,12 +15,12 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
     String description;
     Calendar tag;
 
-    public RendezvousImpl(Calendar time, int toto, String title) {
+    public RendezvousImpl(Calendar time, int duration, String title) {
         time.set(Calendar.SECOND, 0);
         time.set(Calendar.MILLISECOND, 0);
         this.tag = (Calendar) time.clone();
         this.time = time;
-        this.duration = (toto == 0) ? 1 : Math.abs(toto);
+        this.duration = (duration == 0) ? 1 : Math.abs(duration); // Gère les durées négatives et nulles
         this.title = title;
     }
 
@@ -92,7 +92,7 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
         return duration == that.duration && time.equals(that.time) && title.equals(that.title) && Objects.equals(description, that.description) && tag.equals(that.tag);
     }
 
-    /*
+
     @Override
     public String toString() {
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
@@ -102,5 +102,4 @@ public class RendezvousImpl implements Rendezvous, Cloneable {
 
     }
 
-     */
 }

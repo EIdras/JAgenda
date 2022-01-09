@@ -174,7 +174,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
 
             if (limiteBasse != startTime.getTimeInMillis()){
                 Calendar oldLimiteBasseCalendar = Calendar.getInstance();
-                long oldLimiteBasse = 0;
+                long oldLimiteBasse;
                 /*
                                    startTime            endTime
                         ]--------------|=====|-------------|-------------->
@@ -253,6 +253,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
         return returnList;
     }
 
+    // Crée et retourne une subMap / headMap / tailMap suivant la valeur des paramètres
     private Map<Calendar, RendezvousImpl> createSubMap(Calendar startTime, Calendar endTime) {
         Map<Calendar, RendezvousImpl> subMap;
 
