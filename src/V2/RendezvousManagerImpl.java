@@ -75,29 +75,20 @@ public class RendezvousManagerImpl implements RendezvousManager {
 
     @Override
     public List<Rendezvous> getRendezvousBetween(Calendar startTime, Calendar endTime) throws IllegalArgumentException {
-        if (startTime == null || endTime == null){
-            throw new IllegalArgumentException();
-        }
-        Map<UidTag, RendezvousImpl> subMap = createSubMap(new UidTag(startTime), new UidTag(endTime));
-        return new ArrayList<>(subMap.values());
+        if (startTime == null || endTime == null) throw new IllegalArgumentException();
+        return new ArrayList<>(createSubMap(new UidTag(startTime), new UidTag(endTime)).values());
     }
 
     @Override
     public List<Rendezvous> getRendezvousBefore(Calendar time) throws IllegalArgumentException {
-        if (time == null){
-            throw new IllegalArgumentException();
-        }
-        Map<UidTag, RendezvousImpl> headMap = createSubMap(null, new UidTag(time));
-        return new ArrayList<>(headMap.values());
+        if (time == null) throw new IllegalArgumentException();
+        return new ArrayList<>(createSubMap(null, new UidTag(time)).values());
     }
 
     @Override
     public List<Rendezvous> getRendezvousAfter(Calendar time) throws IllegalArgumentException {
-        if (time == null){
-            throw new IllegalArgumentException();
-        }
-        Map<UidTag, RendezvousImpl> tailMap = createSubMap(new UidTag(time), null);
-        return new ArrayList<>(tailMap.values());
+        if (time == null) throw new IllegalArgumentException();
+        return new ArrayList<>(createSubMap(new UidTag(time), null).values());
     }
 
     @Override
@@ -111,8 +102,7 @@ public class RendezvousManagerImpl implements RendezvousManager {
         Calendar tomorrow = (Calendar) today.clone();
         tomorrow.add(Calendar.DAY_OF_MONTH, 1);
 
-        Map<UidTag, RendezvousImpl> subMap = createSubMap(new UidTag(today), new UidTag(tomorrow));
-        return new ArrayList<>(subMap.values());
+        return new ArrayList<>(createSubMap(new UidTag(today), new UidTag(tomorrow)).values());
     }
 
     @Override

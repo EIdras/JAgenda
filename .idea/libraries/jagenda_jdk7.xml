@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="jagenda_jdk7">
     <CLASSES>
-      <root url="jar://$USER_HOME$/Desktop/COURS/ALGO/Algo Avancée/JAgenda/jagenda_jdk7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/jagenda_jdk7.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
